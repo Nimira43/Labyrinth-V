@@ -17,7 +17,7 @@ export default function App() {
   return (
     <Canvas camera={{ position: [0, 1.6, 0], fov: 80 }}>
       <color attach='background' args={['#050509']} />
-      <fog attach='fog' args={['#050509', 10, 80]} />
+      <fog attach='fog' args={["#050509", 15, 120]} />
       <ambientLight intensity={0.4} />
       <directionalLight position={[10, 20, 10]} intensity={1} />
 
