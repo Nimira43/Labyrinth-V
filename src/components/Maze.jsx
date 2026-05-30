@@ -88,8 +88,11 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
         <planeGeometry args={[width * cellSize, height * cellSize]} />
         <meshStandardMaterial
           color='#2a2a2a'
-          roughness={0.8}
-          metalness={0.2}
+          // Might bring this back
+          // roughness={0.8}
+          // metalness={0.2}
+          roughness={0.18}
+          metalness={0.85}
         />
       </mesh>
 
@@ -97,10 +100,13 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       <instancedMesh ref={hRef} args={[null, null, hWalls.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, baseWallHeight, T]} />
         <meshStandardMaterial
-          color='#7a7a7a'          // mid‑granite grey
-          roughness={0.35}         // smoother surface for shine
-          metalness={0.6}          // subtle metallic reflection
-          emissive='#2a2a2a'       // faint depth glow
+          color='#7a7a7a'
+          // Might bring this back
+          // roughness={0.35}
+          // metalness={0.6}  
+          roughness={0.18}
+          metalness={0.85}
+          emissive='#2a2a2a'       
           emissiveIntensity={0.15}
         />
       </instancedMesh>

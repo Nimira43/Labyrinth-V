@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber'
+
 import Maze from './components/Maze'
 import Player from './components/Player'
 import { generateMaze } from './maze/mazeGenerator'
@@ -18,8 +19,14 @@ export default function App() {
     <Canvas camera={{ position: [0, 1.6, 0], fov: 80 }}>
       <color attach='background' args={['#050509']} />
       <fog attach='fog' args={["#050509", 15, 120]} />
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 20, 10]} intensity={1} />
+
+      {/* Might bring this back */}
+      {/* <ambientLight intensity={0.4} />
+      <directionalLight position={[10, 20, 10]} intensity={1} /> */}
+
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[10, 20, 10]} intensity={1.4} />
+
 
       <Maze
         width={width}
