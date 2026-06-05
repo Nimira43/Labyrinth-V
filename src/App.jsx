@@ -20,13 +20,8 @@ export default function App() {
       <color attach='background' args={['#050509']} />
       <fog attach='fog' args={["#050509", 15, 120]} />
 
-      {/* Might bring this back */}
-      {/* <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 20, 10]} intensity={1} /> */}
-
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[10, 20, 10]} intensity={1.4} />
-
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[10, 20, 10]} intensity={1} />
 
       <Maze
         width={width}
