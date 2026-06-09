@@ -14,17 +14,15 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       row.forEach(({ x, y, walls: w }) => {
         const cx = x * cellSize + offsetX
         const cz = y * cellSize + offsetZ
-
-        const h = baseWallHeight + Math.random() * 4  // 2.5 → 6.5
+        const h = baseWallHeight + Math.random() * 4 // 2.5 → 6.5
 
         if (w.top) hWalls.push([cx, h / 2, cz - cellSize / 2 - T / 2, h])
         if (w.bottom) hWalls.push([cx, h / 2, cz + cellSize / 2 + T / 2, h])
-
         if (w.left) vWalls.push([cx - cellSize / 2 - T / 2, h / 2, cz, h])
         if (w.right) vWalls.push([cx + cellSize / 2 + T / 2, h / 2, cz, h])
 
         const enclosed = (w.left && w.right) || (w.top && w.bottom)
-        const roofChance = 0.45 // 45% of eligible cells get a roof
+        const roofChance = 0.45
         if (enclosed && Math.random() < roofChance) {
           const roofHeight = h + 0.2 + Math.random() * 0.6
           roofs.push([cx, roofHeight, cz])
@@ -43,26 +41,70 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
     const dummy = new THREE.Object3D()
 
     hWalls.forEach(([x, y, z, h], i) => {
-      dummy.position.set(x, y, z)
-      dummy.scale.set(1, h / baseWallHeight, 1)
+      const isOuter =
+        x <= offsetX + cellSize / 2 ||
+        x >= offsetX + width * cellSize - cellSize / 2 ||
+        z <= offsetZ + cellSize / 2 ||
+        z >= offsetZ + height * cellSize - cellSize / 2
+
+      const jitter = isOuter ? 0 : 0.25
+      const rotJitter = isOuter ? 0 : 0.08
+
+      dummy.position.set(
+        x + (Math.random() - 0.5) * jitter,
+        y,
+        z + (Math.random() - 0.5) * jitter
+      )
+      dummy.rotation.y = (Math.random() - 0.5) * rotJitter
+      dummy.rotation.x = (Math.random() - 0.5) * (isOuter ? 0 : 0.02)
+      dummy.rotation.z = (Math.random() - 0.5) * (isOuter ? 0 : 0.02)
+      dummy.scale.set(
+        1 + (Math.random() - 0.5) * (isOuter ? 0 : 0.1),
+        h / baseWallHeight,
+        1 + (Math.random() - 0.5) * (isOuter ? 0 : 0.1)
+      )
+
       dummy.updateMatrix()
       hRef.current.setMatrixAt(i, dummy.matrix)
     })
     hRef.current.instanceMatrix.needsUpdate = true
+
     vWalls.forEach(([x, y, z, h], i) => {
-      dummy.position.set(x, y, z)
-      dummy.scale.set(1, h / baseWallHeight, 1)
+      const isOuter =
+        x <= offsetX + cellSize / 2 ||
+        x >= offsetX + width * cellSize - cellSize / 2 ||
+        z <= offsetZ + cellSize / 2 ||
+        z >= offsetZ + height * cellSize - cellSize / 2
+
+      const jitter = isOuter ? 0 : 0.25
+      const rotJitter = isOuter ? 0 : 0.08
+
+      dummy.position.set(
+        x + (Math.random() - 0.5) * jitter,
+        y,
+        z + (Math.random() - 0.5) * jitter
+      )
+      dummy.rotation.y = (Math.random() - 0.5) * rotJitter
+      dummy.rotation.x = (Math.random() - 0.5) * (isOuter ? 0 : 0.02)
+      dummy.rotation.z = (Math.random() - 0.5) * (isOuter ? 0 : 0.02)
+      dummy.scale.set(
+        1 + (Math.random() - 0.5) * (isOuter ? 0 : 0.1),
+        h / baseWallHeight,
+        1 + (Math.random() - 0.5) * (isOuter ? 0 : 0.1)
+      )
+
       dummy.updateMatrix()
       vRef.current.setMatrixAt(i, dummy.matrix)
     })
     vRef.current.instanceMatrix.needsUpdate = true
+
     roofs.forEach(([x, y, z], i) => {
       dummy.position.set(x, y, z)
       dummy.updateMatrix()
       roofRef.current.setMatrixAt(i, dummy.matrix)
     })
     roofRef.current.instanceMatrix.needsUpdate = true
-  }, [hWalls, vWalls, roofs, baseWallHeight])
+  }, [hWalls, vWalls, roofs, baseWallHeight, width, height, offsetX, offsetZ, cellSize])
 
   return (
     <group>
@@ -75,21 +117,16 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
         ]}
       >
         <planeGeometry args={[width * cellSize, height * cellSize]} />
-        <meshStandardMaterial
-          color='#2a2a2a'
-          roughness={0.8}
-          metalness={0.2}
-        />
+        <meshStandardMaterial color='#605959' roughness={0.8} metalness={0.2} />
       </mesh>
 
-      {/* Horizontal walls */}
       <instancedMesh ref={hRef} args={[null, null, hWalls.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, baseWallHeight, T]} />
         <meshStandardMaterial
           color='#7a7a7a'
           roughness={0.35}
-          metalness={0.6}  
-          emissive='#2a2a2a'       
+          metalness={0.6}
+          emissive='#2a2a2a'
           emissiveIntensity={0.15}
         />
       </instancedMesh>
@@ -108,9 +145,10 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       <instancedMesh ref={roofRef} args={[null, null, roofs.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, 0.4, cellSize]} />
         <meshStandardMaterial
-          color='#9b9b9b'          
-          roughness={0.25}         
-          metalness={0.8}                    emissive='#3a3a3a'
+          color='#9b9b9b'
+          roughness={0.25}
+          metalness={0.8}
+          emissive='#3a3a3a'
           emissiveIntensity={0.25}
         />
       </instancedMesh>

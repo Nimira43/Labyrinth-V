@@ -17,11 +17,12 @@ export default function App() {
 
   return (
     <Canvas camera={{ position: [0, 1.6, 0], fov: 80 }}>
-      <color attach='background' args={['#050509']} />
-      <fog attach='fog' args={["#050509", 15, 120]} />
+      <color attach='background' args={['#3b87e3']} /> {/* soft sky blue */}
+      <fog attach='fog' args={['#b8d8ff', 30, 180]} /> {/* lighter fog */}
 
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 20, 10]} intensity={1} />
+      <ambientLight intensity={0.8} /> {/* brighter base light */}
+      <directionalLight position={[15, 30, 10]} intensity={1.2} color='#ffffff' />
+      <hemisphereLight skyColor='#cfe8ff' groundColor='#e0d7c3' intensity={0.6} />
 
       <Maze
         width={width}
