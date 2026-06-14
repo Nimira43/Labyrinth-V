@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
+import { Environment } from '@react-three/drei'
 
 import Maze from './components/Maze'
 import Player from './components/Player'
@@ -17,36 +19,38 @@ export default function App() {
 
   return (
     <Canvas camera={{ position: [0, 1.6, 0], fov: 80 }}>
-      <color attach='background' args={['#3b87e3']} /> {/* soft sky blue */}
-      <fog attach='fog' args={['#b8d8ff', 30, 180]} /> {/* lighter fog */}
+      
+      <Environment preset="city" intensity={0.7} />
+      
+      <color attach='background' args={['#0a1118']} /> 
+      <fog attach='fog' args={['#0a1118', 10, 50]} /> 
 
-      <ambientLight intensity={0.8} /> {/* brighter base light */}
-      <directionalLight position={[15, 30, 10]} intensity={1.2} color='#ffffff' />
-      <hemisphereLight skyColor='#cfe8ff' groundColor='#e0d7c3' intensity={0.6} />
+      <ambientLight intensity={0.15} /> 
+      <directionalLight position={[10, 20, 10]} intensity={0.6} color='#ffffff' />
 
-      <Maze
-        width={width}
-        height={height}
-        cells={cells}
-        exitCell={exitCell}
-        cellSize={cellSize}
-        wallThickness={wallThickness}
-        offsetX={offsetX}
-        offsetZ={offsetZ}
-      />
+      <Suspense fallback={null}>
+        <Maze
+          width={width}
+          height={height}
+          cells={cells}
+          exitCell={exitCell}
+          cellSize={cellSize}
+          wallThickness={wallThickness}
+          offsetX={offsetX}
+          offsetZ={offsetZ}
+        />
 
-      <Player
-        mazeGrid={cells}
-        exitCell={exitCell}
-        cellSize={cellSize}
-        offsetX={offsetX}
-        offsetZ={offsetZ}
-      />
+        <Player
+          mazeGrid={cells}
+          exitCell={exitCell}
+          cellSize={cellSize}
+          offsetX={offsetX}
+          offsetZ={offsetZ}
+        />
+      </Suspense>
     </Canvas>
   )
 }
-
-
 
 
 
