@@ -1,13 +1,12 @@
 import { useMemo, useRef, useEffect } from 'react'
 import * as THREE from 'three'
-import { useTexture } from '@react-three/drei' // <-- Import useTexture helper
+import { useTexture } from '@react-three/drei'
 
 export default function Maze({ width, height, cells, exitCell, cellSize, wallThickness, offsetX, offsetZ }) {
   const baseWallHeight = 2.5
   const T = wallThickness
 
-  // 1. Load all PBR texture maps from the public folder
-  const textures = useTexture({
+  const wallTextures = useTexture({
     map: '/textures/Metal048A/Metal048A_4K-JPG_Color.jpg',
     roughnessMap: '/textures/Metal048A/Metal048A_4K-JPG_Roughness.jpg',
     metalnessMap: '/textures/Metal048A/Metal048A_4K-JPG_Metalness.jpg',
@@ -15,15 +14,27 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
     displacementMap: '/textures/Metal048A/Metal048A_4K-JPG_Displacement.jpg',
   })
 
-  // 2. Configure textures to repeat neatly across walls instead of stretching
+  const floorTextures = useTexture({
+    map: '/textures/Marble017/Marble017_4K-JPG_Color.jpg',
+    roughnessMap: '/textures/Marble017/Marble017_4K-JPG_Roughness.jpg',
+    normalMap: '/textures/Marble017/Marble017_4K-JPG_NormalGL.jpg',
+  })
+
   useEffect(() => {
-    Object.values(textures).forEach((texture) => {
+    // Wall repetition configuration
+    Object.values(wallTextures).forEach((texture) => {
       texture.wrapS = THREE.RepeatWrapping
       texture.wrapT = THREE.RepeatWrapping
-      // Adjust these numbers if the metal pattern looks too big or tiny on the walls
       texture.repeat.set(1, 1) 
     })
-  }, [textures])
+
+    // Floor repetition configuration
+    Object.values(floorTextures).forEach((texture) => {
+      texture.wrapS = THREE.RepeatWrapping
+      texture.wrapT = THREE.RepeatWrapping
+      texture.repeat.set(width, height) 
+    })
+  }, [wallTextures, floorTextures, width, height])
 
   const { hWalls, vWalls, roofs } = useMemo(() => {
     const hWalls = []
@@ -131,7 +142,7 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
 
   return (
     <group>
-      {/* Floor */}
+      {/* Floor with Polished Marble PBR Tuning */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[
@@ -141,15 +152,21 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
         ]}
       >
         <planeGeometry args={[width * cellSize, height * cellSize]} />
-        <meshStandardMaterial color='#1a1a1a' roughness={0.5} metalness={0.2} />
+        <meshStandardMaterial 
+          {...floorTextures}
+          color='#ffffff' 
+          metalness={0.0}
+          roughness={0.15}
+          normalScale={new THREE.Vector2(1.5, 1.5)}
+        />
       </mesh>
 
       {/* Horizontal Walls */}
       <instancedMesh ref={hRef} args={[null, null, hWalls.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, baseWallHeight, T]} />
         <meshStandardMaterial 
-          {...textures} 
-          color="#333a42" 
+          {...wallTextures} 
+          color='#333a42' 
           displacementScale={0.01} 
         />
       </instancedMesh>
@@ -158,8 +175,8 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       <instancedMesh ref={vRef} args={[null, null, vWalls.length]} frustumCulled={false}>
         <boxGeometry args={[T, baseWallHeight, cellSize]} />
         <meshStandardMaterial 
-          {...textures} 
-          color="#333a42" 
+          {...wallTextures} 
+          color='#333a42' 
           displacementScale={0.01}
         />
       </instancedMesh>
