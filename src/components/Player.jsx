@@ -28,6 +28,7 @@ export default function Player({ mazeGrid, exitCell, cellSize, offsetX, offsetZ 
   const controls = useRef()
   const direction = useRef(new THREE.Vector3())
   const keys = useRef({})
+  const hasWon = useRef(false)
   const speed = 5
 
   const { camera, gl } = useThree()
@@ -76,7 +77,11 @@ export default function Player({ mazeGrid, exitCell, cellSize, offsetX, offsetZ 
 
     const exitX = exitCell.x * cellSize + offsetX
     const exitZ = exitCell.y * cellSize + offsetZ
-    if (pos.distanceTo(new THREE.Vector3(exitX, pos.y, exitZ)) < 1) {
+    
+    
+    if (!hasWon.current && pos.distanceTo(new THREE.Vector3(exitX, pos.y, exitZ)) < 1) {
+      hasWon.current = true
+      controls.current.unlock()
       alert('You escaped Labyrinth V!')
     }
   })
