@@ -3,9 +3,6 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
 
-// Classic 3D Perlin noise (Stefan Gustavson), reused from the water shader project.
-// Spliced into the wall material's fragment shader via onBeforeCompile below.
-
 const noiseGLSL = `
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
 vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
@@ -73,8 +70,12 @@ float cnoise(vec3 P) {
   return 2.2 * n_xyz;
 }
 `
-export default function Maze({ width, height, cells, exitCell, cellSize, wallThickness, offsetX, offsetZ }) {
+
+export default function Maze({
+  width, height, cells, exitCell, cellSize, wallThickness, offsetX, offsetZ, towers = []
+}) {
   const baseWallHeight = 2.5
+  const towerHeight = 10
   const T = wallThickness
 
   const wallTextures = useTexture({
@@ -139,9 +140,9 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
   const hShaderRef = useRef()
   const vShaderRef = useRef()
 
-  const makeWallCompiler = useCallback((shaderRef) => (shader) => {
+  const onCompileH = useCallback((shader) => {
     shader.uniforms.uTime = { value: 0 }
-    shaderRef.current = shader
+    hShaderRef.current = shader
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vWorldPos;`)
@@ -172,8 +173,38 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       )
   }, [])
 
-  const onCompileH = useMemo(() => makeWallCompiler(hShaderRef), [makeWallCompiler])
-  const onCompileV = useMemo(() => makeWallCompiler(vShaderRef), [makeWallCompiler])
+  const onCompileV = useCallback((shader) => {
+    shader.uniforms.uTime = { value: 0 }
+    vShaderRef.current = shader
+
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\nvarying vec3 vWorldPos;`)
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        vec3 instanced = transformed;
+        #ifdef USE_INSTANCING
+          instanced = (instanceMatrix * vec4(transformed, 1.0)).xyz;
+        #endif
+        vWorldPos = (modelMatrix * vec4(instanced, 1.0)).xyz;`
+      )
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform float uTime;
+        varying vec3 vWorldPos;
+        ${noiseGLSL}`
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+        float shimmer = cnoise(vec3(vWorldPos.xz * 0.6, uTime * 0.25));
+        shimmer = smoothstep(0.25, 0.85, shimmer);
+        totalEmissiveRadiance += vec3(1.0, 0.27, 0.0) * shimmer * 0.5;`
+      )
+  }, [])
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
@@ -255,9 +286,9 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[
-          (width * cellSize) / 2 + offsetX,
+          (width * cellSize) / 2 + offsetX - cellSize / 2,
           0,
-          (height * cellSize) / 2 + offsetZ,
+          (height * cellSize) / 2 + offsetZ - cellSize / 2,
         ]}
       >
         <planeGeometry args={[width * cellSize, height * cellSize]} />
@@ -280,7 +311,6 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
         />
       </instancedMesh>
 
-  
       <instancedMesh ref={vRef} args={[null, null, vWalls.length]} frustumCulled={false}>
         <boxGeometry args={[T, baseWallHeight, cellSize]} />
         <meshStandardMaterial
@@ -300,6 +330,30 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
         />
       </instancedMesh>
 
+      {towers.map((t, i) => (
+        <group
+          key={i}
+          position={[t.x, 0, t.z]}
+        >
+          <mesh position={[0, towerHeight / 2, 0]}>
+            <cylinderGeometry args={[0.55, 0.7, towerHeight, 16]} />
+            <meshStandardMaterial
+              color='#1a1d21'
+              roughness={0.4}
+              metalness={0.8}
+            />
+          </mesh>
+          <mesh position={[0, towerHeight + 0.15, 0]}>
+            <torusGeometry args={[0.5, 0.08, 12, 24]} />
+            <meshStandardMaterial
+              color='#ff4500'
+              emissive='#ff4500'
+              emissiveIntensity={1.5}
+            />
+          </mesh>
+        </group>
+      ))}
+
       <mesh position={[exitCell.x * cellSize + offsetX, 1.2, exitCell.y * cellSize + offsetZ]}>
         <torusGeometry args={[0.8, 0.2, 16, 32]} />
         <meshStandardMaterial
@@ -311,4 +365,3 @@ export default function Maze({ width, height, cells, exitCell, cellSize, wallThi
     </group>
   )
 }
-

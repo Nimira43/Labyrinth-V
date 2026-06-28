@@ -4,7 +4,8 @@ import { PointerLockControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { getNearbyWalls } from '../maze/mazeGenerator'
 
-const PLAYER_RADIUS = 0.35 
+const PLAYER_RADIUS = 0.35
+const TOWER_RADIUS = 0.7 
 
 function resolveWallCollisions(pos, walls) {
   for (const w of walls) {
@@ -24,7 +25,24 @@ function resolveWallCollisions(pos, walls) {
   }
 }
 
-export default function Player({ mazeGrid, exitCell, cellSize, offsetX, offsetZ }) {
+function resolveTowerCollisions(pos, towers) {
+  for (const t of towers) {
+    const dx = pos.x - t.x
+    const dz = pos.z - t.z
+    const dist = Math.sqrt(dx * dx + dz * dz)
+    const minDist = PLAYER_RADIUS + TOWER_RADIUS
+
+    if (dist < minDist && dist > 0) {
+      const overlap = minDist - dist
+      pos.x += (dx / dist) * overlap
+      pos.z += (dz / dist) * overlap
+    }
+  }
+}
+
+export default function Player({
+  mazeGrid, exitCell, cellSize, wallThickness, offsetX, offsetZ, towers = []
+}) {
   const controls = useRef()
   const direction = useRef(new THREE.Vector3())
   const keys = useRef({})
@@ -71,14 +89,16 @@ export default function Player({ mazeGrid, exitCell, cellSize, offsetX, offsetZ 
     pos.x += move.x
     pos.z += move.z
 
-    const walls = getNearbyWalls(mazeGrid, pos.x, pos.z, cellSize, offsetX, offsetZ)
+    const walls = getNearbyWalls(mazeGrid, pos.x, pos.z, cellSize, offsetX, offsetZ, wallThickness)
     resolveWallCollisions(pos, walls)
-    resolveWallCollisions(pos, walls) 
+    resolveWallCollisions(pos, walls)
+
+    resolveTowerCollisions(pos, towers)
+    resolveTowerCollisions(pos, towers)
 
     const exitX = exitCell.x * cellSize + offsetX
     const exitZ = exitCell.y * cellSize + offsetZ
-    
-    
+
     if (!hasWon.current && pos.distanceTo(new THREE.Vector3(exitX, pos.y, exitZ)) < 1) {
       hasWon.current = true
       controls.current.unlock()
