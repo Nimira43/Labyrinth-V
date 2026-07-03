@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
 
@@ -74,6 +74,7 @@ float cnoise(vec3 P) {
 export default function Maze({
   width, height, cells, exitCell, cellSize, wallThickness, offsetX, offsetZ, towers = []
 }) {
+  const { gl } = useThree()
   const baseWallHeight = 2.5
   const towerHeight = 10
   const T = wallThickness
@@ -87,24 +88,31 @@ export default function Maze({
   })
 
   const floorTextures = useTexture({
-    map: '/textures/Marble017/Marble017_4K-JPG_Color.jpg',
-    roughnessMap: '/textures/Marble017/Marble017_4K-JPG_Roughness.jpg',
-    normalMap: '/textures/Marble017/Marble017_4K-JPG_NormalGL.jpg',
+    map: '/textures/WoodFloor048/WoodFloor048_2K-JPG_Color.jpg',
+    roughnessMap: '/textures/WoodFloor048/WoodFloor048_2K-JPG_Roughness.jpg',
+    normalMap: '/textures/WoodFloor048/WoodFloor048_2K-JPG_NormalGL.jpg',
   })
 
   useEffect(() => {
+    const maxAniso = gl.capabilities.getMaxAnisotropy()
+
     Object.values(wallTextures).forEach((texture) => {
       texture.wrapS = THREE.RepeatWrapping
       texture.wrapT = THREE.RepeatWrapping
       texture.repeat.set(1, 1)
+      texture.anisotropy = maxAniso
+      texture.needsUpdate = true
     })
 
     Object.values(floorTextures).forEach((texture) => {
       texture.wrapS = THREE.RepeatWrapping
       texture.wrapT = THREE.RepeatWrapping
-      texture.repeat.set(width, height)
+      texture.repeat.set(width / 2, height / 2)
+      texture.anisotropy = maxAniso
+      texture.needsUpdate = true
     })
-  }, [wallTextures, floorTextures, width, height])
+  }, [wallTextures, floorTextures, width, height, gl])
+
 
   const { hWalls, vWalls, roofs } = useMemo(() => {
     const hWalls = []
@@ -294,10 +302,10 @@ export default function Maze({
         <planeGeometry args={[width * cellSize, height * cellSize]} />
         <meshStandardMaterial
           {...floorTextures}
-          color='#ffffff'
+          color='#ccbbaa'
           metalness={0.0}
-          roughness={0.15}
-          normalScale={new THREE.Vector2(1.5, 1.5)}
+          roughness={0.55}
+          normalScale={new THREE.Vector2(0.8, 0.8)}
         />
       </mesh>
 

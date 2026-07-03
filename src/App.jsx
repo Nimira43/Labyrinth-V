@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
 import Maze from './components/Maze'
 import Player from './components/Player'
+import BackgroundMusic from './components/BackgroundMusic'
 import { generateMaze, generateTowerPositions } from './maze/mazeGenerator'
 
 export default function App() {
@@ -29,29 +30,32 @@ export default function App() {
   }, [width, height, cellSize, offsetX, offsetZ])
 
   return (
+  <>
+  
+    <BackgroundMusic url='/sounds/bg.ogg' volume={0.4} />
     <Canvas
       camera={{
         position: [0, 1.6, 0], fov: 80
       }}
-    >
+      >
       <Environment
         preset='city'
         intensity={0.7}
-      />
+        />
       <color
         attach='background'
         args={['#0a1118']}
-      /> 
+        /> 
       <fog
         attach='fog'
         args={['#0a1118', 10, 50]}
-      /> 
+        /> 
       <ambientLight intensity={0.15} /> 
       <directionalLight
         position={[10, 20, 10]}
         intensity={0.6}
         color='#ffffff'
-      />
+        />
       <Suspense fallback={null}>
         <Maze
           width={width}
@@ -63,7 +67,7 @@ export default function App() {
           offsetX={offsetX}
           offsetZ={offsetZ}
           towers={towers}
-        />
+          />
         <Player
           mazeGrid={cells}
           exitCell={exitCell}
@@ -72,9 +76,10 @@ export default function App() {
           offsetX={offsetX}
           offsetZ={offsetZ}
           towers={towers}
-        />
+          />
       </Suspense>
     </Canvas>
+          </>
   )
 }
 
