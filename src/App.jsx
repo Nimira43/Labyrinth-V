@@ -30,56 +30,60 @@ export default function App() {
   }, [width, height, cellSize, offsetX, offsetZ])
 
   return (
-  <>
-  
-    <BackgroundMusic url='/sounds/bg.ogg' volume={0.4} />
-    <Canvas
-      camera={{
-        position: [0, 1.6, 0], fov: 80
-      }}
+    <>
+      <BackgroundMusic url='/sounds/bg.ogg' volume={0.4} />
+      <Canvas
+        camera={{
+          position: [0, 1.6, 0], fov: 80
+        }}
       >
-      <Environment
-        preset='city'
-        intensity={0.7}
+        <Environment
+          // city preset being normally used,
+          preset='city'
+          intensity={0.7}
+
+          // night: 
+          // preset='night'
+          // intensity={0.5}
         />
-      <color
-        attach='background'
-        args={['#0a1118']}
+        <color
+          attach='background'
+          args={['#0a1118']}
         /> 
-      <fog
-        attach='fog'
-        args={['#0a1118', 10, 50]}
+        <fog
+          attach='fog'
+          args={['#0a1118', 10, 50]}
         /> 
-      <ambientLight intensity={0.15} /> 
-      <directionalLight
-        position={[10, 20, 10]}
-        intensity={0.6}
-        color='#ffffff'
+        <ambientLight intensity={0.15} /> 
+        <directionalLight
+          position={[10, 20, 10]}
+          intensity={0.6}
+          color='#ffffff'
         />
-      <Suspense fallback={null}>
-        <Maze
-          width={width}
-          height={height}
-          cells={cells}
-          exitCell={exitCell}
-          cellSize={cellSize}
-          wallThickness={wallThickness}
-          offsetX={offsetX}
-          offsetZ={offsetZ}
-          towers={towers}
+        <Suspense fallback={null}>
+          <Maze
+            width={width}
+            height={height}
+            cells={cells}
+            exitCell={exitCell}
+            cellSize={cellSize}
+            wallThickness={wallThickness}
+            offsetX={offsetX}
+            offsetZ={offsetZ}
+            towers={towers}
           />
-        <Player
-          mazeGrid={cells}
-          exitCell={exitCell}
-          cellSize={cellSize}
-          wallThickness={wallThickness}
-          offsetX={offsetX}
-          offsetZ={offsetZ}
-          towers={towers}
+          <Player
+            mazeGrid={cells}
+            exitCell={exitCell}
+            cellSize={cellSize}
+            wallThickness={wallThickness}
+            offsetX={offsetX}
+            offsetZ={offsetZ}
+            towers={towers}
           />
-      </Suspense>
-    </Canvas>
-          </>
+        </Suspense>
+      </Canvas>
+    </>
   )
 }
 

@@ -1,5 +1,3 @@
-// Separated from Maze.jsx - thess shaders are not yet hooked up
-
 const noiseGLSL = `
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
 vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
@@ -67,7 +65,6 @@ float cnoise(vec3 P) {
   return 2.2 * n_xyz;
 }
 `
-
 const vertexPatch = (vertexShader) => vertexShader
   .replace('#include <common>', `#include <common>\nvarying vec3 vWorldPos;`)
   .replace(
