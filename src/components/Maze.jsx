@@ -175,7 +175,7 @@ export default function Maze({
           {...floorTextures}
           color='#8a7a6a'
           metalness={0.0}
-          roughness={0.4} // normally set to 0.7
+          roughness={0.2} // normally set to 0.7
           normalScale={new THREE.Vector2(0.8, 0.8)}
         />
       </mesh>
