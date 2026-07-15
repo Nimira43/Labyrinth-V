@@ -9,11 +9,22 @@ export function generateMaze(width, height, extraPassages = 0.15) {
   const idx = (x, y) => y * width + x
 
   const removeWall = (ax, ay, dir) => {
-    if (dir === TOP) { grid[idx(ax, ay)] &= ~TOP; grid[idx(ax, ay - 1)] &= ~BOTTOM; }
-    if (dir === BOTTOM) { grid[idx(ax, ay)] &= ~BOTTOM; grid[idx(ax, ay + 1)] &= ~TOP; }
-    if (dir === RIGHT) { grid[idx(ax, ay)] &= ~RIGHT; grid[idx(ax + 1, ay)] &= ~LEFT; }
-    if (dir === LEFT) { grid[idx(ax, ay)] &= ~LEFT; grid[idx(ax - 1, ay)] &= ~RIGHT; }
-  };
+    if (dir === TOP) {
+      grid[idx(ax, ay)] &= ~TOP; grid[idx(ax, ay - 1)] &= ~BOTTOM;
+    }
+
+    if (dir === BOTTOM) {
+      grid[idx(ax, ay)] &= ~BOTTOM; grid[idx(ax, ay + 1)] &= ~TOP;
+    }
+
+    if (dir === RIGHT) {
+      grid[idx(ax, ay)] &= ~RIGHT; grid[idx(ax + 1, ay)] &= ~LEFT;
+    }
+
+    if (dir === LEFT) {
+      grid[idx(ax, ay)] &= ~LEFT; grid[idx(ax - 1, ay)] &= ~RIGHT;
+    }
+  }
 
   const stack = [0]
   grid[0] |= VISITED
@@ -52,12 +63,10 @@ export function generateMaze(width, height, extraPassages = 0.15) {
     const x = Math.floor(Math.random() * width)
     const y = Math.floor(Math.random() * height)
     const dirs = []
-
     if (y > 0) dirs.push(TOP)
     if (x < width - 1) dirs.push(RIGHT)
     if (y < height - 1) dirs.push(BOTTOM)
     if (x > 0) dirs.push(LEFT)
-
     const dir = dirs[Math.floor(Math.random() * dirs.length)]
     if (grid[idx(x, y)] & dir) removeWall(x, y, dir)
   }
@@ -87,14 +96,54 @@ export function generateMaze(width, height, extraPassages = 0.15) {
 export function generateTowerPositions(width, height, count = 3) {
   const fractions = [
     { fx: 0.25, fz: 0.25 },
-    { fx: 0.75, fz: 0.4 },
+    { fx: 0.75, fz: 0.4  },
     { fx: 0.45, fz: 0.75 },
   ]
-
   return fractions.slice(0, count).map(({ fx, fz }) => ({
     x: Math.floor(width * fx),
     y: Math.floor(height * fz),
   }))
+}
+
+export function hasLineOfSight(cells, worldAX, worldAZ, worldBX, worldBZ, cellSize, offsetX, offsetZ) {
+  const width = cells[0].length
+  const height = cells.length
+  const dist = Math.sqrt((worldBX - worldAX) ** 2 + (worldBZ - worldAZ) ** 2)
+  const steps = Math.ceil(dist / (cellSize * 0.4))
+
+  let prevCX = -1
+  let prevCZ = -1
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const wx = worldAX + (worldBX - worldAX) * t
+    const wz = worldAZ + (worldBZ - worldAZ) * t
+
+    const cx = Math.floor((wx - offsetX) / cellSize + 0.5)
+    const cz = Math.floor((wz - offsetZ) / cellSize + 0.5)
+
+    if (cx < 0 || cx >= width || cz < 0 || cz >= height) {
+      prevCX = cx; prevCZ = cz; continue
+    }
+
+    if (prevCX >= 0 && prevCZ >= 0 && (cx !== prevCX || cz !== prevCZ)) {
+      const dcx = cx - prevCX
+      const dcz = cz - prevCZ
+      const prevCell = cells[prevCZ]?.[prevCX]
+
+      if (prevCell) {
+        if (dcx ===  1 && prevCell.walls.right) return false
+        if (dcx === -1 && prevCell.walls.left) return false
+        if (dcz ===  1 && prevCell.walls.bottom) return false
+        if (dcz === -1 && prevCell.walls.top) return false
+      }
+    }
+
+    prevCX = cx
+    prevCZ = cz
+  }
+
+  return true
 }
 
 export function getNearbyWalls(cells, worldX, worldZ, cellSize, offsetX, offsetZ, T = 0.3) {
@@ -123,7 +172,7 @@ export function getNearbyWalls(cells, worldX, worldZ, cellSize, offsetX, offsetZ
           minZ: wz - cellSize / 2 - T,
           maxZ: wz - cellSize / 2 + T
         })
-
+      
       if (cell.walls.bottom)
         walls.push({
           minX: wx - cellSize / 2,
@@ -131,7 +180,7 @@ export function getNearbyWalls(cells, worldX, worldZ, cellSize, offsetX, offsetZ
           minZ: wz + cellSize / 2 - T,
           maxZ: wz + cellSize / 2 + T
         })
-
+      
       if (cell.walls.left)
         walls.push({
           minX: wx - cellSize / 2 - T,
@@ -139,7 +188,7 @@ export function getNearbyWalls(cells, worldX, worldZ, cellSize, offsetX, offsetZ
           minZ: wz - cellSize / 2,
           maxZ: wz + cellSize / 2
         })
-
+      
       if (cell.walls.right)
         walls.push({
           minX: wx + cellSize / 2 - T,
@@ -151,12 +200,3 @@ export function getNearbyWalls(cells, worldX, worldZ, cellSize, offsetX, offsetZ
   }
   return walls
 }
-
-
-
-
-
-
-
-
-

@@ -5,18 +5,15 @@ import * as THREE from 'three'
 import { getNearbyWalls } from '../maze/mazeGenerator'
 
 const PLAYER_RADIUS = 0.35
-const TOWER_RADIUS = 0.7 
+const TOWER_RADIUS = 0.7
 
 function resolveWallCollisions(pos, walls) {
   for (const w of walls) {
-
     const closestX = Math.max(w.minX, Math.min(pos.x, w.maxX))
     const closestZ = Math.max(w.minZ, Math.min(pos.z, w.maxZ))
-
     const dx = pos.x - closestX
     const dz = pos.z - closestZ
     const dist = Math.sqrt(dx * dx + dz * dz)
-
     if (dist < PLAYER_RADIUS && dist > 0) {
       const overlap = PLAYER_RADIUS - dist
       pos.x += (dx / dist) * overlap
@@ -31,7 +28,6 @@ function resolveTowerCollisions(pos, towers) {
     const dz = pos.z - t.z
     const dist = Math.sqrt(dx * dx + dz * dz)
     const minDist = PLAYER_RADIUS + TOWER_RADIUS
-
     if (dist < minDist && dist > 0) {
       const overlap = minDist - dist
       pos.x += (dx / dist) * overlap
@@ -41,7 +37,8 @@ function resolveTowerCollisions(pos, towers) {
 }
 
 export default function Player({
-  mazeGrid, exitCell, cellSize, wallThickness, offsetX, offsetZ, towers = []
+  mazeGrid, exitCell, cellSize, wallThickness,
+  offsetX, offsetZ, towers = [], isActive = true
 }) {
   const controls = useRef()
   const direction = useRef(new THREE.Vector3())
@@ -53,12 +50,12 @@ export default function Player({
 
   useEffect(() => {
     const down = (e) => (keys.current[e.key.toLowerCase()] = true)
-    const up   = (e) => (keys.current[e.key.toLowerCase()] = false)
+    const up = (e) => (keys.current[e.key.toLowerCase()] = false)
     window.addEventListener('keydown', down)
-    window.addEventListener('keyup',   up)
+    window.addEventListener('keyup', up)
     return () => {
       window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup',   up)
+      window.removeEventListener('keyup', up)
     }
   }, [])
 
@@ -68,8 +65,14 @@ export default function Player({
     }
   }, [])
 
+  useEffect(() => {
+    if (!isActive && controls.current) {
+      controls.current.unlock()
+    }
+  }, [isActive])
+
   useFrame((_, delta) => {
-    if (!controls.current) return
+    if (!controls.current || !isActive) return
 
     const dir = direction.current
     dir.set(0, 0, 0)
@@ -106,5 +109,10 @@ export default function Player({
     }
   })
 
-  return <PointerLockControls ref={controls} args={[camera, gl.domElement]} />
+  return (
+    <PointerLockControls
+      ref={controls}
+      args={[camera, gl.domElement]}
+    />
+  )
 }

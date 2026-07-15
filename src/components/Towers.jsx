@@ -1,86 +1,113 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { hasLineOfSight } from '../maze/mazeGenerator'
 
-const FIRE_RANGE    = 15    
-const FIRE_INTERVAL = 2.5   
-const BOLT_DURATION = 0.35 
+const FIRE_RANGE = 15
+const FIRE_INTERVAL = 2.5
+const BOLT_DURATION = 0.35
+const HIT_DAMAGE = 20
+const MAX_BOLTS = 6  
 
-function Bolt({ from, to }) {
-  const dir    = new THREE.Vector3().subVectors(to, from)
-  const length = dir.length()
-  const mid    = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5)
-
-  const quaternion = new THREE.Quaternion()
-  quaternion.setFromUnitVectors(
-    new THREE.Vector3(0, 1, 0),
-    dir.clone().normalize()
-  )
-
-  return (
-    <mesh position={mid} quaternion={quaternion}>
-      <cylinderGeometry args={[0.04, 0.04, length, 6]} />
-      <meshStandardMaterial
-        color='#ff4500'
-        emissive='#ff4500'
-        emissiveIntensity={4}
-        toneMapped={false}
-      />
-    </mesh>
-  )
-}
-
-export default function Towers({ towers, towerHeight = 10 }) {
+export default function Towers({
+  towers,
+  towerHeight = 10,
+  cells,
+  cellSize,
+  offsetX,
+  offsetZ,
+  onHit,
+  isActive = true,
+}) {
   const { camera } = useThree()
 
   const lastFireTime = useRef(
     towers.map((_, i) => -(i * (FIRE_INTERVAL / Math.max(towers.length, 1))))
   )
 
-  const [bolts, setBolts]   = useState([])
-  const boltIdRef           = useRef(0)
-  const beamAudioRef        = useRef(null)
+  const boltMeshes = useRef([])
+  const activeBolts = useRef([]) 
+  const audioPool = useRef([])
+  const audioPoolIndex = useRef(0)
+
+  const _from = useRef(new THREE.Vector3())
+  const _to = useRef(new THREE.Vector3())
+  const _dir = useRef(new THREE.Vector3())
+  const _mid = useRef(new THREE.Vector3())
+  const _quat = useRef(new THREE.Quaternion())
+  const _up = useRef(new THREE.Vector3(0, 1, 0))
+
+  const haloRefs = useRef([])
 
   useEffect(() => {
-    const audio = new Audio('/sounds/beam.flac')
-    audio.volume = 0.6
-    beamAudioRef.current = audio
+    audioPool.current = Array.from({ length: 4 }, () => {
+      const a = new Audio('/sounds/beam.flac')
+      a.volume = 0.6
+      return a
+    })
   }, [])
 
   useFrame(({ clock }) => {
-    const t   = clock.getElapsedTime()
+    const t = clock.getElapsedTime()
     const pos = camera.position
 
-    setBolts(prev => {
-      const active = prev.filter(b => t - b.startTime < BOLT_DURATION)
-      return active.length === prev.length ? prev : active
+    activeBolts.current = activeBolts.current.filter(b => {
+      if (t - b.startTime > BOLT_DURATION) {
+        const mesh = boltMeshes.current[b.meshIndex]
+        if (mesh) mesh.visible = false
+        return false
+      }
+      return true
     })
 
     towers.forEach((tower, i) => {
-      if (t - lastFireTime.current[i] < FIRE_INTERVAL) return
-
-      const dx   = pos.x - tower.x
-      const dz   = pos.z - tower.z
+      const dx = pos.x - tower.x
+      const dz = pos.z - tower.z
       const dist = Math.sqrt(dx * dx + dz * dz)
 
+      const halo = haloRefs.current[i]
+      if (halo?.material) {
+        const proximity = Math.max(0, 1 - dist / FIRE_RANGE)
+        const pulseSpeed = 1 + proximity * 8
+        halo.material.emissiveIntensity =
+          1.5 + Math.sin(t * pulseSpeed * Math.PI * 2) * proximity * 1.5
+      }
+
+      if (!isActive) return
+      if (t - lastFireTime.current[i] < FIRE_INTERVAL) return
       if (dist > FIRE_RANGE) return
+      if (!hasLineOfSight(cells, tower.x, tower.z, pos.x, pos.z, cellSize, offsetX, offsetZ)) return
 
       lastFireTime.current[i] = t
 
-      const from = new THREE.Vector3(tower.x, towerHeight * 0.9, tower.z)
-      const to   = new THREE.Vector3(pos.x, pos.y, pos.z)
+      const usedIndices = new Set(activeBolts.current.map(b => b.meshIndex))
+      const freeIndex = boltMeshes.current.findIndex((_, idx) => !usedIndices.has(idx))
+      if (freeIndex === -1) return
 
-      setBolts(prev => [...prev, {
-        id:        boltIdRef.current++,
-        from,
-        to,
-        startTime: t,
-      }])
+      const mesh = boltMeshes.current[freeIndex]
+      if (mesh) {
+        _from.current.set(tower.x, towerHeight * 0.9, tower.z)
+        _to.current.set(pos.x, pos.y, pos.z)
+        _dir.current.subVectors(_to.current, _from.current)
+        const length = _dir.current.length()
+        _mid.current.addVectors(_from.current, _to.current).multiplyScalar(0.5)
+        _quat.current.setFromUnitVectors(_up.current, _dir.current.normalize())
 
-      if (beamAudioRef.current) {
-        const clip = beamAudioRef.current.cloneNode()
-        clip.volume = 0.6
-        clip.play().catch(() => {})
+        mesh.position.copy(_mid.current)
+        mesh.quaternion.copy(_quat.current)
+        mesh.scale.set(1, length, 1) 
+        mesh.visible = true
+
+        activeBolts.current.push({ meshIndex: freeIndex, startTime: t })
+      }
+
+      onHit?.(HIT_DAMAGE)
+
+      const audio = audioPool.current[audioPoolIndex.current % audioPool.current.length]
+      audioPoolIndex.current++
+      if (audio) {
+        audio.currentTime = 0
+        audio.play().catch(() => {})
       }
     })
   })
@@ -91,6 +118,7 @@ export default function Towers({ towers, towerHeight = 10 }) {
     <>
       {towers.map((t, i) => (
         <group key={i} position={[t.x, 0, t.z]}>
+
           <mesh position={[0, towerHeight / 2, 0]}>
             <cylinderGeometry args={[0.55, 0.7, towerHeight, 16]} />
             <meshStandardMaterial
@@ -100,7 +128,10 @@ export default function Towers({ towers, towerHeight = 10 }) {
             />
           </mesh>
 
-          <mesh position={[0, towerHeight + 0.15, 0]}>
+          <mesh
+            ref={el => { haloRefs.current[i] = el }}
+            position={[0, towerHeight + 0.15, 0]}
+          >
             <torusGeometry args={[0.5, 0.08, 12, 24]} />
             <meshStandardMaterial
               color='#ff4500'
@@ -112,9 +143,21 @@ export default function Towers({ towers, towerHeight = 10 }) {
         </group>
       ))}
 
-      {bolts.map(bolt => (
-        <Bolt key={bolt.id} from={bolt.from} to={bolt.to} />
+      {Array.from({ length: MAX_BOLTS }, (_, i) => (
+        <mesh
+          key={`bolt-${i}`}
+          ref={el => { boltMeshes.current[i] = el }}
+          visible={false}
+        >
+          <cylinderGeometry args={[0.04, 0.04, 1, 6]} />
+          <meshStandardMaterial
+            color='#ff4500'
+            emissive='#ff4500'
+            emissiveIntensity={4}
+            toneMapped={false}
+          />
+        </mesh>
       ))}
     </>
   )
-} 
+}

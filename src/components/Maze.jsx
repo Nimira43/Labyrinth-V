@@ -6,7 +6,8 @@ import { makeWallShader } from '../shaders/wallShader'
 import Towers from './Towers'
 
 export default function Maze({
-  width, height, cells, exitCell, cellSize, wallThickness, offsetX, offsetZ, towers = []
+  width, height, cells, exitCell, cellSize, wallThickness,
+  offsetX, offsetZ, towers = [], onHit, isActive = true
 }) {
   const { gl } = useThree()
   const baseWallHeight = 2.5
@@ -79,13 +80,8 @@ export default function Maze({
   const hShaderRef = useRef()
   const vShaderRef = useRef()
 
-  const onCompileH = useCallback((shader) => {
-    makeWallShader(hShaderRef)(shader)
-  }, [])
-
-  const onCompileV = useCallback((shader) => {
-    makeWallShader(vShaderRef)(shader)
-  }, [])
+  const onCompileH = useCallback((shader) => { makeWallShader(hShaderRef)(shader) }, [])
+  const onCompileV = useCallback((shader) => { makeWallShader(vShaderRef)(shader) }, [])
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
@@ -99,7 +95,7 @@ export default function Maze({
     hWalls.forEach(([x, y, z, h], i) => {
       const isOuter =
         x <= offsetX + cellSize / 2 ||
-        x >= offsetX + width * cellSize - cellSize / 2 ||
+        x >= offsetX + width  * cellSize - cellSize / 2 ||
         z <= offsetZ + cellSize / 2 ||
         z >= offsetZ + height * cellSize - cellSize / 2
 
@@ -127,7 +123,7 @@ export default function Maze({
     vWalls.forEach(([x, y, z, h], i) => {
       const isOuter =
         x <= offsetX + cellSize / 2 ||
-        x >= offsetX + width * cellSize - cellSize / 2 ||
+        x >= offsetX + width  * cellSize - cellSize / 2 ||
         z <= offsetZ + cellSize / 2 ||
         z >= offsetZ + height * cellSize - cellSize / 2
 
@@ -162,10 +158,11 @@ export default function Maze({
 
   return (
     <group>
+
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[
-          (width * cellSize) / 2 + offsetX - cellSize / 2,
+          (width  * cellSize) / 2 + offsetX - cellSize / 2,
           0,
           (height * cellSize) / 2 + offsetZ - cellSize / 2,
         ]}
@@ -175,15 +172,12 @@ export default function Maze({
           {...floorTextures}
           color='#8a7a6a'
           metalness={0.0}
-          roughness={0.2} // normally set to 0.7
+          roughness={0.3}
           normalScale={new THREE.Vector2(0.8, 0.8)}
         />
       </mesh>
-      <instancedMesh
-        ref={hRef}
-        args={[null, null, hWalls.length]}
-        frustumCulled={false}
-      >
+
+      <instancedMesh ref={hRef} args={[null, null, hWalls.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, baseWallHeight, T]} />
         <meshStandardMaterial
           {...wallTextures}
@@ -192,11 +186,8 @@ export default function Maze({
           onBeforeCompile={onCompileH}
         />
       </instancedMesh>
-      <instancedMesh
-        ref={vRef}
-        args={[null, null, vWalls.length]}
-        frustumCulled={false}
-      >
+
+      <instancedMesh ref={vRef} args={[null, null, vWalls.length]} frustumCulled={false}>
         <boxGeometry args={[T, baseWallHeight, cellSize]} />
         <meshStandardMaterial
           {...wallTextures}
@@ -205,27 +196,28 @@ export default function Maze({
           onBeforeCompile={onCompileV}
         />
       </instancedMesh>
-      <instancedMesh
-        ref={roofRef}
-        args={[null, null, roofs.length]}
-        frustumCulled={false}
-      >
+
+      <instancedMesh ref={roofRef} args={[null, null, roofs.length]} frustumCulled={false}>
         <boxGeometry args={[cellSize, 0.4, cellSize]} />
-        <meshStandardMaterial
-          color='#111111'
-          roughness={0.4}
-          metalness={0.8}
-        />
+        <meshStandardMaterial color='#111111' roughness={0.4} metalness={0.8} />
       </instancedMesh>
-      <Towers towers={towers} towerHeight={towerHeight} />
+
+      <Towers
+        towers={towers}
+        towerHeight={towerHeight}
+        cells={cells}
+        cellSize={cellSize}
+        offsetX={offsetX}
+        offsetZ={offsetZ}
+        onHit={onHit}
+        isActive={isActive}
+      />
+
       <mesh position={[exitCell.x * cellSize + offsetX, 1.2, exitCell.y * cellSize + offsetZ]}>
         <torusGeometry args={[0.8, 0.2, 16, 32]} />
-        <meshStandardMaterial
-          color='#00ffcc'
-          emissive='#00ffcc'
-          emissiveIntensity={2.0}
-        />
+        <meshStandardMaterial color='#00ffcc' emissive='#00ffcc' emissiveIntensity={2.0} />
       </mesh>
+
     </group>
   )
 }
