@@ -6,6 +6,7 @@ import Player from './components/Player'
 import BackgroundMusic from './components/BackgroundMusic'
 import HUD from './components/HUD'
 import { generateMaze, generateTowerPositions } from './maze/mazeGenerator'
+import Starfield from './components/Starfield'
 
 const MAX_HEALTH = 100
 
@@ -125,6 +126,7 @@ export default function App() {
         <directionalLight position={[10, 20, 10]} intensity={0.6} color='#ffffff' />
 
         <Suspense fallback={null}>
+          <Starfield />
           <Maze
             width={width}
             height={height}
