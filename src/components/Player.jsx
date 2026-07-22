@@ -38,7 +38,7 @@ function resolveTowerCollisions(pos, towers) {
 
 export default function Player({
   mazeGrid, exitCell, cellSize, wallThickness,
-  offsetX, offsetZ, towers = [], isActive = true
+  offsetX, offsetZ, towers = [], isActive = true, onWin
 }) {
   const controls = useRef()
   const direction = useRef(new THREE.Vector3())
@@ -105,7 +105,7 @@ export default function Player({
     if (!hasWon.current && pos.distanceTo(new THREE.Vector3(exitX, pos.y, exitZ)) < 1) {
       hasWon.current = true
       controls.current.unlock()
-      alert('You escaped Labyrinth V!')
+      onWin?.()
     }
   })
 

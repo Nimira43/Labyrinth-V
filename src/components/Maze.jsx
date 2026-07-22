@@ -5,11 +5,13 @@ import { useTexture } from '@react-three/drei'
 import { makeWallShader } from '../shaders/wallShader'
 import Towers from './Towers'
 
+const EXIT_GLOW_RANGE = 15
+
 export default function Maze({
   width, height, cells, exitCell, cellSize, wallThickness,
   offsetX, offsetZ, towers = [], onHit, isActive = true
 }) {
-  const { gl } = useThree()
+  const { gl, camera } = useThree()
   const baseWallHeight = 2.5
   const towerHeight = 10
   const T = wallThickness
@@ -84,14 +86,28 @@ export default function Maze({
   const roofRef = useRef()
   const hShaderRef = useRef()
   const vShaderRef = useRef()
+  const exitHaloRef = useRef()
 
   const onCompileH = useCallback((shader) => { makeWallShader(hShaderRef)(shader) }, [])
   const onCompileV = useCallback((shader) => { makeWallShader(vShaderRef)(shader) }, [])
+
+  const exitWorldX = exitCell.x * cellSize + offsetX
+  const exitWorldZ = exitCell.y * cellSize + offsetZ
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
     if (hShaderRef.current) hShaderRef.current.uniforms.uTime.value = t
     if (vShaderRef.current) vShaderRef.current.uniforms.uTime.value = t
+
+    if (exitHaloRef.current?.material) {
+      const dx = camera.position.x - exitWorldX
+      const dz = camera.position.z - exitWorldZ
+      const dist = Math.sqrt(dx * dx + dz * dz)
+      const proximity = Math.max(0, 1 - dist / EXIT_GLOW_RANGE)
+      const pulseSpeed = 1 + proximity * 8
+      exitHaloRef.current.material.emissiveIntensity =
+        1.5 + Math.sin(t * pulseSpeed * Math.PI * 2) * proximity * 1.5
+    }
   })
 
   useEffect(() => {
@@ -234,12 +250,15 @@ export default function Maze({
         isActive={isActive}
       />
 
-      <mesh position={[exitCell.x * cellSize + offsetX, 1.2, exitCell.y * cellSize + offsetZ]}>
-        <torusGeometry args={[0.8, 0.2, 16, 32]} />
+      <mesh
+        ref={exitHaloRef}
+        position={[exitWorldX, 1.2, exitWorldZ]}
+      >
+        <torusGeometry args={[0.8, 0.15, 12, 24]} />
         <meshStandardMaterial
-          color='#00ffcc'
-          emissive='#00ffcc'
-          emissiveIntensity={2.0}
+          color='#ff4500'
+          emissive='#ff4500'
+          emissiveIntensity={1.5}
         />
       </mesh>
 

@@ -34,6 +34,7 @@ export default function App() {
 
   const [health, setHealth] = useState(MAX_HEALTH)
   const [gameOver, setGameOver] = useState(false)
+  const [won, setWon] = useState(false)
 
   const handleHit = useCallback((damage) => {
     setHealth(prev => {
@@ -43,7 +44,13 @@ export default function App() {
     })
   }, [])
 
+  const handleWin = useCallback(() => {
+    setWon(true)
+  }, [])
+
   const handleRestart = () => window.location.reload()
+
+  const isRunning = !gameOver && !won
 
   return (
     <>
@@ -118,6 +125,73 @@ export default function App() {
         </div>
       )}
 
+      {won && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0, 0, 0, 0.82)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize:  48,
+            fontWeight: 'bold',
+            letterSpacing: 8,
+            color: '#ff4500',
+            textTransform: 'uppercase',
+            textShadow: '0 0 40px #ff4500, 0 0 80px #ff2200',
+            marginBottom: 16,
+          }}>
+            Escaped
+          </div>
+
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            letterSpacing: 4,
+            color: 'rgba(255, 69, 0, 0.6)',
+            textTransform: 'uppercase',
+            marginBottom: 48,
+          }}>
+            You've escaped the Labyrinth
+          </div>
+
+          <button
+            onClick={handleRestart}
+            style={{
+              fontFamily: 'monospace',
+              fontSize: 13,
+              letterSpacing: 4,
+              textTransform: 'uppercase',
+              color: '#ff4500',
+              background: 'transparent',
+              border: '1px solid rgba(255, 69, 0, 0.5)',
+              padding: '12px 32px',
+              cursor: 'pointer',
+              borderRadius: 2,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.target.style.background = 'rgba(255, 69, 0, 0.15)'
+              e.target.style.borderColor = '#ff4500'
+              e.target.style.boxShadow = '0 0 20px rgba(255,69,0,0.3)'
+            }}
+            onMouseLeave={e => {
+              e.target.style.background = 'transparent'
+              e.target.style.borderColor = 'rgba(255,69,0,0.5)'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            Re-enter Labyrinth
+          </button>
+        </div>
+      )}
+
       <Canvas camera={{ position: [0, 1.6, 0], fov: 80 }}>
         <Environment preset='city' intensity={0.7} />
         <color attach='background' args={['#0a1118']} />
@@ -138,7 +212,7 @@ export default function App() {
             offsetZ={offsetZ}
             towers={towers}
             onHit={handleHit}
-            isActive={!gameOver}
+            isActive={isRunning}
           />
           <Player
             mazeGrid={cells}
@@ -148,7 +222,8 @@ export default function App() {
             offsetX={offsetX}
             offsetZ={offsetZ}
             towers={towers}
-            isActive={!gameOver}
+            isActive={isRunning}
+            onWin={handleWin}
           />
         </Suspense>
       </Canvas>
