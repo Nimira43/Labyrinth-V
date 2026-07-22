@@ -28,7 +28,12 @@ export default function Maze({
     normalMap: '/textures/WoodFloor048/WoodFloor048_2K-JPG_NormalGL.jpg',
   })
 
+  const texturesConfigured = useRef(false)
+
   useEffect(() => {
+    if (texturesConfigured.current) return
+    texturesConfigured.current = true
+
     const maxAniso = gl.capabilities.getMaxAnisotropy()
 
     Object.values(wallTextures).forEach((texture) => {
@@ -177,7 +182,11 @@ export default function Maze({
         />
       </mesh>
 
-      <instancedMesh ref={hRef} args={[null, null, hWalls.length]} frustumCulled={false}>
+      <instancedMesh
+        ref={hRef}
+        args={[null, null, hWalls.length]}
+        frustumCulled={false}
+      >
         <boxGeometry args={[cellSize, baseWallHeight, T]} />
         <meshStandardMaterial
           {...wallTextures}
@@ -187,7 +196,11 @@ export default function Maze({
         />
       </instancedMesh>
 
-      <instancedMesh ref={vRef} args={[null, null, vWalls.length]} frustumCulled={false}>
+      <instancedMesh
+        ref={vRef}
+        args={[null, null, vWalls.length]}
+        frustumCulled={false}
+      >
         <boxGeometry args={[T, baseWallHeight, cellSize]} />
         <meshStandardMaterial
           {...wallTextures}
@@ -197,9 +210,17 @@ export default function Maze({
         />
       </instancedMesh>
 
-      <instancedMesh ref={roofRef} args={[null, null, roofs.length]} frustumCulled={false}>
+      <instancedMesh
+        ref={roofRef}
+        args={[null, null, roofs.length]}
+        frustumCulled={false}
+      >
         <boxGeometry args={[cellSize, 0.4, cellSize]} />
-        <meshStandardMaterial color='#111111' roughness={0.4} metalness={0.8} />
+        <meshStandardMaterial
+          color='#111111'
+          roughness={0.4}
+          metalness={0.8}
+        />
       </instancedMesh>
 
       <Towers
@@ -215,7 +236,11 @@ export default function Maze({
 
       <mesh position={[exitCell.x * cellSize + offsetX, 1.2, exitCell.y * cellSize + offsetZ]}>
         <torusGeometry args={[0.8, 0.2, 16, 32]} />
-        <meshStandardMaterial color='#00ffcc' emissive='#00ffcc' emissiveIntensity={2.0} />
+        <meshStandardMaterial
+          color='#00ffcc'
+          emissive='#00ffcc'
+          emissiveIntensity={2.0}
+        />
       </mesh>
 
     </group>
